@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 90" width="480" height="360">
+  <!-- 机器人主体像素路径 -->
+  <path fill="#2CC295" fill-rule="evenodd" shape-rendering="crispEdges" d="
+    M 20 10 H 40 V 20 H 80 V 10 H 100 V 30 H 110 V 70 H 100 V 80 H 20 V 70 H 10 V 30 H 20 Z 
+    M 30 30 V 70 H 90 V 30 Z 
+    M 40 40 H 50 V 60 H 40 Z 
+    M 70 40 H 80 V 60 H 70 Z
+  "/>
+</svg>

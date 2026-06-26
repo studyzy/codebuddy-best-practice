@@ -1,0 +1,132 @@
+# MCP 服务器最佳实践
+
+![最后更新](https://img.shields.io/badge/Last_Updated-Mar%2002%2C%202026%2012%3A30%20PM%20PKT-white?style=flat&labelColor=555)<br>
+[![已实现](https://img.shields.io/badge/Implemented-2ea44f?style=flat)](../.mcp.json)
+
+MCP（Model Context Protocol）服务器通过连接外部工具、数据库和 API 扩展 CodeBuddy Code。本指南介绍日常使用的推荐服务器和配置最佳实践。
+
+<table width="100%">
+<tr>
+<td><a href="../">← 返回 CodeBuddy Code 最佳实践</a></td>
+<td align="right"><img src="../!/codebuddy-jumping.svg" alt="CodeBuddy" width="60" /></td>
+</tr>
+</table>
+
+---
+
+## 日常使用的 MCP 服务器
+
+> *"装了 15 个 MCP 服务器以为越多越好。结果日常只用 4 个。"* — [r/mcp](https://reddit.com/r/mcp/comments/1mj0fxs/)（682 赞）
+
+| MCP 服务器 | 功能 | 资源 |
+|------------|-------------|-----------|
+| [**Context7**](https://github.com/upstash/context7) | 获取最新的库文档到上下文。防止基于过时训练数据的 API 幻觉 | [Reddit: "编码最好的 MCP"](https://reddit.com/r/mcp/comments/1qarjqm/) · [npm](https://www.npmjs.com/package/@upstash/context7-mcp) |
+| [**Playwright**](https://github.com/microsoft/playwright-mcp) | 浏览器自动化 —— 自主实现、测试和验证 UI 功能。截图、导航、表单测试 | [Reddit: 前端必备](https://reddit.com/r/mcp/comments/1m59pk0/) · [文档](https://playwright.dev/) |
+| [**CodeBuddy in Chrome**](https://github.com/nicobailon/codebuddy-code-in-chrome-mcp) | 将 CodeBuddy 连接到你的真实 Chrome 浏览器 —— 检查控制台、网络、DOM。调试用户实际看到的内容 | [Reddit: 调试"游戏规则改变者"](https://reddit.com/r/mcp/comments/1qarjqm/5_mcps_that_have_genuinely_made_me_10x_faster/nza0i7t/) · [对比报告](../reports/codebuddy-in-chrome-v-chrome-devtools-mcp.md) |
+| [**DeepWiki**](https://github.com/devanshusemwal/deepwiki-mcp) | 获取任何 GitHub 仓库的结构化 wiki 风格文档 —— 架构、API 表面、关系 | [Reddit: "和 Context7 一起放在网关后面"](https://reddit.com/r/mcp/comments/1qarjqm/) |
+| [**Excalidraw**](https://github.com/antonpk1/excalidraw-mcp-app) | 从提示生成架构图、流程图和系统设计，以手绘风格的 Excalidraw 草图 | [GitHub](https://github.com/antonpk1/excalidraw-mcp-app) |
+
+研究（Context7/DeepWiki）→ 调试（Playwright/Chrome）→ 文档（Excalidraw）
+
+---
+
+## 配置
+
+MCP 服务器在项目根目录的 `.mcp.json`（项目作用域）或 `~/.codebuddy/settings.json`（用户作用域）中配置。
+
+### 服务器类型
+
+| 类型 | 传输方式 | 示例 |
+|------|-----------|---------|
+| **stdio** | 生成本地进程 | `npx`、`python`、二进制 |
+| **http** | 连接远程 URL | HTTP/SSE 端点 |
+
+### 示例 `.mcp.json`
+
+```json
+{
+  "mCP服务器": {
+    "context7": {
+      "命令": "npx",
+      "参数": ["-y", "@upstash/context7-mcp"]
+    },
+    "playwright": {
+      "命令": "npx",
+      "参数": ["-y", "@playwright/mcp"]
+    },
+    "deepwiki": {
+      "命令": "npx",
+      "参数": ["-y", "deepwiki-mcp"]
+    },
+    "remote-api": {
+      "类型": "http",
+      "URL": "https://mcp.example.com/mcp"
+    }
+  }
+}
+```
+
+使用环境变量扩展来处理密钥，而不是在 `.mcp.json` 中提交 API 密钥：
+
+```json
+{
+  "mcpServers": {
+    "remote-api": {
+      "type": "http",                          // 类型：HTTP
+      "url": "https://mcp.example.com/mcp?token=${MCP_API_TOKEN}"  // 地址：包含MCP API令牌的认证URL
+    }
+  }
+}
+```
+
+### MCP 服务器设置
+
+`.codebuddy/settings.json` 中的这些设置控制 MCP 服务器审批：
+
+| 键 | 类型 | 描述 |
+|-----|------|-------------|
+| `enableAllProjectMcpServers` | boolean | 自动批准所有 `.mcp.json` 服务器，无需提示 |
+| `enabledMcpjsonServers` | array | 自动批准的特定服务器名称白名单 |
+| `disabledMcpjsonServers` | array | 拒绝的特定服务器名称黑名单 |
+
+### MCP 工具的权限规则
+
+MCP 工具在权限规则中遵循 `mcp__<server>__<tool>` 命名约定：
+
+```json
+{
+  "权限": {
+    "允许": [
+      "mcp__*",
+      "mcp__context7__*",
+      "mcp__playwright__browser_snapshot"
+    ],
+    "拒绝": [
+      "mcp__dangerous-server__*"
+    ]
+  }
+}
+```
+
+---
+
+## MCP 作用域
+
+MCP 服务器可以在三个级别定义：
+
+| 作用域 | 位置 | 用途 |
+|-------|----------|---------|
+| **项目** | `.mcp.json`（仓库根目录）| 团队共享服务器，提交到 git |
+| **用户** | `~/.codebuddy/settings.json`（`mcpServers` 键）| 跨所有项目的个人服务器 |
+| **子代理** | 代理 frontmatter（`mcpServers` 字段）| 作用于特定子代理的服务器 |
+
+优先级：子代理 > 项目 > 用户
+
+---
+
+## 来源
+
+- [MCP 服务器 — CodeBuddy Code 文档](https://www.codebuddy.cn/docs/cli/en/mcp)
+- [Model Context Protocol 规范](https://modelcontextprotocol.io/)
+- [5 个让我效率提升 10 倍的 MCP — r/mcp](https://reddit.com/r/mcp/comments/1qarjqm/)
+- [MCP 服务器过载讨论 — r/mcp](https://reddit.com/r/mcp/comments/1mj0fxs/)
